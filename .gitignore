@@ -1,0 +1,30 @@
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.env
+.venv
+venv/
+env/
+*.egg-info/
+.eggs/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Data file
+data/raw_data.csv
+
+# Temporary/Working files
+*.tmp
+*.log
+
+# Models
+*.pt
+*.bin
