@@ -20,6 +20,7 @@ env/
 
 # Data file
 data/raw_data.csv
+data/cleaned_reviews.csv
 
 # Temporary/Working files
 *.tmp
@@ -28,3 +29,4 @@ data/raw_data.csv
 # Models
 *.pt
 *.bin
+*.safetensors

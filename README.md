@@ -1,77 +1,94 @@
 # 🏥 Sentiment Analysis on Google Reviews of US Medical Facilities
 
-This project performs **binary sentiment classification** (positive / negative) on a dataset of ~233k [Google reviews for US medical facilities]("https://www.kaggle.com/datasets/cgrowe96/google-reviews-of-us-medical-facilities").  
-It starts with a **lightweight scikit-learn pipeline** (`TF-IDF + Logistic Regression`) for fast training and deployment, with plans to **optionally upgrade** to transformer-based models such as **DistilBERT**, **BERT**, or **RoBERTa** for potentially higher accuracy.
+This project performs **binary sentiment classification** (positive / negative) on a dataset of ~233k [Google reviews for US medical facilities]("https://www.kaggle.com/datasets/cgrowe96/google-reviews-of-us-medical-facilities"). It combines a **traditional ML model (TF-IDF + Logistic Regression)** with a **state-of-the-art transformer model (DistilBERT)**, both deployed on **AWS Lambda** behind **API Gateway** for serverless inference.
 
 ---
 
-## 📊 Dataset
-- Source: Kaggle — [*Google Reviews of US Medical Facilities*]("https://www.kaggle.com/datasets/cgrowe96/google-reviews-of-us-medical-facilities")  
-- Key columns used:
-  - **Review Text** — the review content (input feature)
-  - **label** — `"positive"` or `"negative"` sentiment (target variable)
-- Columns dropped: spill1…spill8 and other unused metadata.
+## ✨ Features
+
+- **Two ML approaches**:
+
+  - ✅ Baseline: TF-IDF + Logistic Regression (scikit-learn)
+
+  - 🚀 Advanced: DistilBERT fine-tuned with Hugging Face Transformers
+
+- **Serverless deployment**: Packaged into AWS Lambda (via Docker/ECR).
+
+- **REST API** endpoints for real-time predictions.
 
 ---
 
-## 🚀 Current Approach
-- **Preprocessing**:
-  - Remove nulls
-  - Lowercase text
-  - Remove HTML tags, URLs, emails, extra punctuation
-  - Keep stopwords (negations are important for sentiment)
-- **Model**:
-  - `TfidfVectorizer` (1–2 ngrams, min_df=5, max_df=0.95, max_features=50k)
-  - `LogisticRegression` (solver='saga', class_weight='balanced')
-- **Performance** (baseline TF-IDF + Logistic Regression):
-    - Accuracy: ~96.8%
-    - F1 (positive): ~0.972
-    - Balanced precision/recall across both classes.
-
-- **Error Analysis**:
-    - False positives often contain positive words in sarcastic/mixed contexts.
-    - False negatives often involve negations like "not good" or domain terms like "told", "hours".
-
----
-
-## 🔮 Future Plans
-Following the planned steps:
-1. **Local Data Prep & Model Training** — completed for TF-IDF + Logistic Regression.
-2. **Optional Model Upgrade** — experiment with `distilbert-base-uncased`, `bert-base-uncased`, or `roberta-base` using Hugging Face Transformers.
-3. **Local Testing Script** — load the trained model and test predictions.
-4. **AWS Deployment** —  
-     - Upload trained model to S3  
-     - Create Lambda function + API Gateway endpoint  
-5. **Frontend** — Streamlit app connected to AWS API.
-
----
-
-## 📂 Repository Structure
-
+## 📂 Project Structure
 <pre>
+medical-sentiment-analysis/
+│
+├── data/                 # Samples of the original dataset and cleaned reviews
+├── notebooks/            # Model training and evaluation code
+├── distilbert_sentiment/ # Fine-tuned Hugging Face model (Colab output)
+├── lambda/               # Lambda deployment code
+│   ├── sklearn/          # Logistic Regression TF-IDF
+│   └── distilbert/       # DistilBERT inference with Docker
+├── api_tests/            # Scripts for querying deployed APIs
+├── models/               # .pkl file from Sklearn model
+├── scripts/              # Model evaluation and model.safetensors download script
 ├── README.md
 ├── METHODOLOGY.md
-├── pipeline_full.ipynb # Jupyter Notebook for model training & evaluation
-├── sentiment_tfidf_logreg.pkl # Saved baseline model 
-├── LICENSE_DATA.txt # ODbL v1.0 license
-├── LICENSE_CODE.txt # MIT license
-└── requirements.txt # Python dependencies
+├── LICENSE_DATA.txt      # ODbL v1.0 license
+├── LICENSE_CODE.txt      # MIT license
+└── requirements.txt      # Python dependencies
+
 </pre>
+
+---
+
+## 🚀 Deployment Summary
+
+- **Scikit-learn model:**
+
+  - Model saved as `.pkl`, uploaded to **S3**.
+
+  - Lambda function loads from S3 (cached in `/tmp` for speed).
+
+  - Deployed directly via **Lambda** + **API Gateway**.
+
+- **DistilBERT model**:
+
+  - Fine-tuned in **Google Colab** (GPU runtime).
+
+  - Saved model files (`config.json`, `pytorch_model.bin`, tokenizer, etc.).
+
+  - Packaged into a **Docker container**, pushed to **AWS ECR**.
+
+  - Deployed via **Lambda container image** behind API Gateway.
 
 
 ---
 
-## ⚙️ Installation & Usage
+## 🧪 Example Usage
+
+**Sklearn API**:
+
 ```bash
-# Clone the repo
-git clone https://github.com/yourusername/medical-review-sentiment.git
-cd medical-review-sentiment
+curl -X POST "https://<api-id>.execute-api.<region>.amazonaws.com/prod/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"review": "The staff was extremely kind and helpful!"}'
+```
 
-# Install dependencies
-pip install -r requirements.txt
+Response:
+```json
+{"sentiment": "positive"}
+```
 
-# Run the notebook
-jupyter notebook pipeline_full.ipynb
+**DistilBERT API**:
+```bash
+curl -X POST "https://<api-id>.execute-api.<region>.amazonaws.com/prod/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"texts": ["The waiting room was dirty, and the staff were rude."]}'
+```
+
+Response:
+```json
+{'predictions': [{'text': 'The waiting room was dirty, and the staff were rude.', 'label': 'negative', 'prob_pos': 0.001}]}
 ```
 
 ---
