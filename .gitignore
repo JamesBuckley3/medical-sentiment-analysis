@@ -14,6 +14,7 @@ venv/
 env/
 *.egg-info/
 .eggs/
+tempCodeRunnerFile.py
 
 # Jupyter Notebook
 .ipynb_checkpoints/
@@ -30,3 +31,7 @@ data/cleaned_reviews.csv
 *.pt
 *.bin
 *.safetensors
+
+# AWS/API data
+.streamlit
+.dockerignore

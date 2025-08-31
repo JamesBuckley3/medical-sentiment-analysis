@@ -1,15 +1,18 @@
-# Dockerfile
-FROM public.ecr.aws/lambda/python:3.11
+FROM amazon/aws-lambda-python:3.10
 
-# Work directory inside the image
-WORKDIR /var/task
+RUN pip install --no-cache-dir \
+    --target "${LAMBDA_TASK_ROOT}" \
+    "numpy<2.0" \
+    torch==2.2.0+cpu \
+    --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir \
+    --target "${LAMBDA_TASK_ROOT}" \
+    transformers==4.37.0
 
-# Install dependencies (with wheels, no compile)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY distilbert_sentiment/ /opt/model/
 
-# Copy your Lambda code
-COPY download_model.py handler.py .
+COPY lambda/lambda_distilbert/handler.py ${LAMBDA_TASK_ROOT}
 
-# Tell Lambda which function to call
+ENV MODEL_DIR=/opt/model
+
 CMD ["handler.lambda_handler"]

@@ -69,32 +69,87 @@
 ---
 
 ## 3️⃣ Deployment
-
 ### 3.1 Sklearn Model
 
-- Uploaded `.pkl` to **S3 bucket**.
+- `.pkl` bundled into Docker container
 
-- Lambda function:
+- Pushed to ECR, deployed as Lambda container image
 
-  - Downloads once to `/tmp/` (cold start), reuses for warm invocations.
+- Lambda (Python 3.11) loads once into `/tmp` (warm cache)
 
-- API Gateway provides `/predict` endpoint.
+- API Gateway → `/predict`
 
 ### 3.2 DistilBERT Model
 
-- Model artifacts packaged into **Docker container**.
+- Model bundled into Docker container
 
-- Base image: `public.ecr.aws/lambda/python:3.11`.
+- Base image: `amazon/aws-lambda-python:3.10`
 
-- Installed `transformers`, `torch`, `safetensors`.
+- Dependencies pinned (`torch`, `transformers`)
 
-- Pushed to **AWS ECR**, deployed as Lambda container image.
+- Pushed to ECR, deployed as Lambda container image
 
-- API Gateway provides `/predict` endpoint.
+- API Gateway → `/predict`
+
+### 3.3 Streamlit Frontend App
+
+Provides a **user-facing web UI** to interact with both APIs:
+
+  - **Input:** user pastes a review
+
+  - **Model Selector:** choose Sklearn or DistilBERT
+
+  - **Results Panel:** displays predicted label, certainty %, and latency
+
+**Debug Panel:**
+
+  - Shows raw request/response JSON for transparency
+
+  - Useful for testing payload formats and API keys
+
+**Certainty:**
+
+  - Scores converted to percentages
+
+  - Capped at 99.9% to avoid misleading “absolute certainty” from rounding
+
+**Latency:**
+
+  - Displayed as end-to-end client time, not just server runtime
+
+**API Keys:**
+
+  - Stored securely in .streamlit/secrets.toml
+
+  - Dynamically switched depending on chosen model
+
+**User Notes:**
+
+  - Cold start: first request per model may take 4-5s
+
+  - Warm requests return within <1s
 
 ---
 
-## 4️⃣ Challenges & Solutions
+## 4️⃣ Monitoring, Logging and Cost Controls
+
+**CloudWatch Logs**: latency, errors, request traces
+
+**Structured logging** in Lambda (`elapsed_ms`, model, payload size)
+
+**Usage Plans:** ~100 requests/day, 10/burst, 1/sec
+
+**Reserved concurrency** to cap Lambda spend
+
+**Slimmed DistilBERT Docker image** (6.3GB → 700MB)
+
+**Pinned dependencies** (NumPy <2.0, scikit-learn==1.7.1)
+
+Future: Quantise DistilBERT with ONNX/TorchScript
+
+---
+
+## 5️⃣ Challenges & Solutions
 
 - **Slow DistilBERT training** → Overcame limitations of my old hardware by training on **Google Colab** (Tesla T4)
 
@@ -102,18 +157,20 @@
 
 - **Scikit-learn version mismatch** → Pinned training and Lambda environments to `scikit-learn==1.7.1`.
 
-- **S3 download slowness** → Implemented caching in `/tmp/`.
-
 - **Docker + Torch dependency conflicts** → Resolved by pinning torch CPU wheels.
 
 - **Input schema mismatch** → Standardised payload formats.
 
+- **Sklearn long cold starts (~30 seconds)** → Changed `lambda_function.py` to no longer load `.pkl` every invocation.
+
 ---
 
-## 5️⃣ Future Improvements
+## 6️⃣ Future Improvements
 
-- Deploy **Streamlit frontend** to interact with both APIs.
+- Multi-class sentiment (positive/negative/neutral)
 
-- Explore **multi-class sentiment** (positive / negative / neutral).
+- Add CI/CD (GitHub Actions → ECR → Lambda)
 
-- Optimise DistilBERT model with **quantisation** for faster Lambda inference.
+- Add integration tests for APIs
+
+- Multilingual models (e.g. XLM-R)

@@ -1,20 +1,29 @@
 # 🏥 Sentiment Analysis on Google Reviews of US Medical Facilities
 
-This project performs **binary sentiment classification** (positive / negative) on a dataset of ~233k [Google reviews for US medical facilities]("https://www.kaggle.com/datasets/cgrowe96/google-reviews-of-us-medical-facilities"). It combines a **traditional ML model (TF-IDF + Logistic Regression)** with a **state-of-the-art transformer model (DistilBERT)**, both deployed on **AWS Lambda** behind **API Gateway** for serverless inference.
+This project performs **binary sentiment classification** (positive / negative) trained on a dataset of ~233k [Google reviews for US medical facilities](https://www.kaggle.com/datasets/cgrowe96/google-reviews-of-us-medical-facilities). It demonstrates two modeling approaches, both deployed serverlessly to **AWS Lambda** and exposed via **API Gateway** with a Streamlit frontend.
 
 ---
 
 ## ✨ Features
 
 - **Two ML approaches**:
-
   - ✅ Baseline: TF-IDF + Logistic Regression (scikit-learn)
-
   - 🚀 Advanced: DistilBERT fine-tuned with Hugging Face Transformers
+- **Streamlit Frontend**:
+  - Google-style input box, model selector, and results panel
+  - Debug mode: shows request/response payloads
+- **Serverless Deployment**:
+  - Packaged into AWS Lambda (Docker/ECR)
+  - Secured with REST API keys
+- **Monitoring & Cost Control**:
+  - CloudWatch metrics and logs
+  - Usage plans to throttle requests (100/day, 10/burst, 1/second)
 
-- **Serverless deployment**: Packaged into AWS Lambda (via Docker/ECR).
+---
 
-- **REST API** endpoints for real-time predictions.
+## 🏗️ Architecture Flowchart
+
+![Flowchart](images/flowchart.png)
 
 ---
 
@@ -22,45 +31,23 @@ This project performs **binary sentiment classification** (positive / negative) 
 <pre>
 medical-sentiment-analysis/
 │
-├── data/                 # Samples of the original dataset and cleaned reviews
-├── notebooks/            # Model training and evaluation code
-├── distilbert_sentiment/ # Fine-tuned Hugging Face model (Colab output)
-├── lambda/               # Lambda deployment code
-│   ├── sklearn/          # Logistic Regression TF-IDF
-│   └── distilbert/       # DistilBERT inference with Docker
-├── api_tests/            # Scripts for querying deployed APIs
-├── models/               # .pkl file from Sklearn model
-├── scripts/              # Model evaluation and model.safetensors download script
+├── data/                   # Samples of the original dataset and cleaned reviews
+├── notebooks/              # Model training and evaluation code
+├── distilbert_sentiment/   # Fine-tuned Hugging Face model (Colab output)
+├── lambda/                 # Lambda deployment code
+│   ├── lambda_sklearn/     # Logistic Regression TF-IDF
+│   └── lambda_distilbert/  # DistilBERT inference with Docker
+├── api_tests/              # Scripts for querying deployed APIs
+├── models/                 # .pkl file from Sklearn model
+├── scripts/                # Model evaluation and S3 model.safetensors download
+├── streamlit_app/          # Streamlit app script and associated files
 ├── README.md
 ├── METHODOLOGY.md
-├── LICENSE_DATA.txt      # ODbL v1.0 license
-├── LICENSE_CODE.txt      # MIT license
-└── requirements.txt      # Python dependencies
+├── LICENSE_DATA.txt        # ODbL v1.0 license
+├── LICENSE_CODE.txt        # MIT license
+└── requirements.txt        # Python dependencies
 
 </pre>
-
----
-
-## 🚀 Deployment Summary
-
-- **Scikit-learn model:**
-
-  - Model saved as `.pkl`, uploaded to **S3**.
-
-  - Lambda function loads from S3 (cached in `/tmp` for speed).
-
-  - Deployed directly via **Lambda** + **API Gateway**.
-
-- **DistilBERT model**:
-
-  - Fine-tuned in **Google Colab** (GPU runtime).
-
-  - Saved model files (`config.json`, `pytorch_model.bin`, tokenizer, etc.).
-
-  - Packaged into a **Docker container**, pushed to **AWS ECR**.
-
-  - Deployed via **Lambda container image** behind API Gateway.
-
 
 ---
 
@@ -71,24 +58,26 @@ medical-sentiment-analysis/
 ```bash
 curl -X POST "https://<api-id>.execute-api.<region>.amazonaws.com/prod/predict" \
   -H "Content-Type: application/json" \
+  -H "x-api-key: <api-key>" \
   -d '{"review": "The staff was extremely kind and helpful!"}'
 ```
 
 Response:
 ```json
-{"sentiment": "positive"}
+{"label": "positive", "score": 0.973, "model": "sklearn"}
 ```
 
 **DistilBERT API**:
 ```bash
 curl -X POST "https://<api-id>.execute-api.<region>.amazonaws.com/prod/predict" \
   -H "Content-Type: application/json" \
+  -H "x-api-key: <api-key>" \
   -d '{"texts": ["The waiting room was dirty, and the staff were rude."]}'
 ```
 
 Response:
 ```json
-{'predictions': [{'text': 'The waiting room was dirty, and the staff were rude.', 'label': 'negative', 'prob_pos': 0.001}]}
+{"label": "negative", "score": 0.998, "model": "distilbert"}
 ```
 
 ---
