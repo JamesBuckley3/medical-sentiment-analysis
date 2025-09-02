@@ -1,6 +1,5 @@
 import time
 import json
-import textwrap
 import requests
 import streamlit as st
 
@@ -171,23 +170,6 @@ if run_btn:
                     """,
                     unsafe_allow_html=True,
                 )
-
-                with st.expander("Request / Response (debug)"):
-                    st.code(
-                        textwrap.dedent(
-                            f"""\
-                            POST {endpoint}
-                            Headers: {json.dumps(headers)}
-                            Payload:
-                            {json.dumps(payload, indent=2)}
-
-                            Status: {status}
-                            Response:
-                            {json.dumps(data, indent=2) if isinstance(data, dict) else str(data)}
-                            """
-                        ),
-                        language="bash",
-                    )
 
 st.markdown("---")
 

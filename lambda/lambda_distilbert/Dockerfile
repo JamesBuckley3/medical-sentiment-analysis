@@ -15,4 +15,6 @@ COPY lambda/lambda_distilbert/handler.py ${LAMBDA_TASK_ROOT}
 
 ENV MODEL_DIR=/opt/model
 
+ENV HF_HOME=/tmp/hf_cache
+
 CMD ["handler.lambda_handler"]

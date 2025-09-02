@@ -101,7 +101,7 @@ Provides a **user-facing web UI** to interact with both APIs:
 
   - **Results Panel:** displays predicted label, certainty %, and latency
 
-**Debug Panel:**
+**Debug Panel (removed for Streamlit Community Cloud deployment):**
 
   - Shows raw request/response JSON for transparency
 

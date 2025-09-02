@@ -7,6 +7,7 @@ from transformers import (
     TextClassificationPipeline,
 )
 
+os.environ["HF_HOME"] = "/tmp/hf_cache"
 _pipe = None
 
 
